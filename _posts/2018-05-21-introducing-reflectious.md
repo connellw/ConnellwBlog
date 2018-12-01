@@ -16,20 +16,20 @@ The way we use reflection favours a builder approach. We usually grab a TypeInfo
 But there's different styles going on. We're using standard instance methods, static utility classes and casting. Consider this code: 
 
 ```c#
-var type = typeof(List<>).MakeGenericType(stubType); 
-    var list = Activator.CreateInstance(type); 
-    int count = (int)type.GetProperty("Count").GetValue(list); 
+var type = typeof(List<>).MakeGenericType(stubType);
+var list = Activator.CreateInstance(type);
+int count = (int)type.GetProperty("Count").GetValue(list);
 ```
 
 Now I think that can be better written as something like: 
 
 ```c#
 int count = typeof(List<>).Reflect()
-        .MakeGeneric(stubType) 
-        .WithNewInstance() 
-        .GetProperty("Count") 
-        .OfType<int>() 
-        .GetValue(); 
+        .MakeGeneric(stubType)
+        .WithNewInstance()
+        .GetProperty("Count")
+        .OfType<int>()
+        .GetValue();
 ```
 
 And that pretty much the premise! The concept extends into use with expressions, creating delegates and dependency injection and could possibly reach into the realm of assembly scanning.
