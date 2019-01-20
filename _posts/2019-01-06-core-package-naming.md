@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Core NuGet Packages
+title: Core Package Naming Convention
 ---
 
 I've noticed a few NuGet packages reference an underlying `.Core` package from their solution. Microsoft themselves have been using this convention in recent packages [Microsoft.AspNetCore.Mvc.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.Mvc.Core/), [Microsoft.AspNetCore.SignalR.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.SignalR.Core/) and [Microsoft.EntityFrameworkCore.Sqlite.Core](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Sqlite.Core/).

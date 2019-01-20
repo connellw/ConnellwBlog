@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Open Source CI pipeline for .NET
+title: Open Source CI pipeline for .NET with AppVeyor
 ---
 
 Plenty of tools offer **free** licenses for open source projects. Often they work quite nicely with eachother, which I'll demonstrate in this article.
