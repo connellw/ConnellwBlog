@@ -3,7 +3,9 @@ layout: post
 title: Core Package Naming Convention
 ---
 
-I've noticed a few NuGet packages reference an underlying `.Core` package from their solution. Microsoft themselves have been using this convention in recent packages [Microsoft.AspNetCore.Mvc.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.Mvc.Core/), [Microsoft.AspNetCore.SignalR.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.SignalR.Core/) and [Microsoft.EntityFrameworkCore.Sqlite.Core](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Sqlite.Core/).
+I've noticed a few NuGet packages reference an underlying `.Core` package from their solution.
+
+Microsoft themselves have been using this convention in recent packages [Microsoft.AspNetCore.Mvc.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.Mvc.Core/), [Microsoft.AspNetCore.SignalR.Core](https://www.nuget.org/packages/Microsoft.AspNetCore.SignalR.Core/) and [Microsoft.EntityFrameworkCore.Sqlite.Core](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Sqlite.Core/).
 
 However, [this answer on StackOverflow](https://stackoverflow.com/a/146578/369247) from years ago says this is a **bad naming convention**.
 
