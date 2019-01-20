@@ -1,3 +1,8 @@
+---
+layout: post
+title: Why Firestorm?
+---
+
 [Firestorm](https://github.com/connellw/Firestorm) is a little thing I was working on that turned into a bigger thing I'm still working on a year later. As it grew, it spawned another little thing that'll probably turn into a bigger thing too. Rinse and repeat. Sound familiar?
 
 Ah, the never-ending cycle of the undisiplined late-night programmer. *"Who needs user stories when I'm the only user?"* I admit, I thought the project would be much smaller than it is. Just everything was fitting so well together; all these crazy ideas seemed to have a perfectly logical place to live.
