@@ -3,7 +3,7 @@ layout: post
 title: Open Source CI pipeline for .NET with AppVeyor
 ---
 
-Plenty of tools offer **free** licenses for open source projects. Often they work quite nicely with eachother, which I'll demonstrate in this article.
+Plenty of tools offer **free** licenses for open source projects. Often they work quite nicely with eachother. In this post I'll show how GitHub, AppVeyor, MyGet and CodeCov can work together in a complete CI/CD pipeline.
 
 This is the setup I use for [Firestorm](https://github.com/connellw/Firestorm) - a solution with 50+ projects, some multi-targetting .NET Standard and .NET Framework, some integration tests communicating with SQL Server.
 
@@ -76,7 +76,7 @@ However, because we are only building the `master` branch, the script checks the
 
 We've also added the `Update-AppveyorBuild` cmdlet to replace the version number displayed on the AppVeyor build.
 
-```ps
+```powershell
 if (Test-Path env:APPVEYOR) {
     $props = [xml](Get-Content Directory.Build.props)
     $prefix = $props.Project.PropertyGroup.VersionPrefix
@@ -91,6 +91,8 @@ if (Test-Path env:APPVEYOR) {
 
 # Test
 
+Test coverage reports are made easy with [coverlet](https://github.com/tonerdo/coverlet) and [CodeCov](https://codecov.io).
+
 ## appveyor.yml
 
 We're going to run our tests within our build script, so tell appveyor to turn the tests off.
@@ -98,6 +100,8 @@ We're going to run our tests within our build script, so tell appveyor to turn t
 ```yml
 test: off
 ```
+
+AppVeyor still recognises the test output and displays results in the **Tests** tab.
 
 ## build.ps1
 
@@ -108,20 +112,34 @@ We apply a logical order for these test runs:
   - **Integration tests** next. These are slower as they spin-up real HTTP servers or communicate with real SQL servers.
   - **Functional tests** last. These can take a lot longer to run.
 
-```ps
+We need to install the coverlet Global Tool then pass command args parameters into our `dotnet test` calls. This generate a `coverage.json` file that we merge into each test run. However, the last test must output in the `opencover.xml` format so we can push to CodeCov.
+
+```powershell
 exec { & dotnet tool install --global coverlet.console }
 
 $testDirs  = @(Get-ChildItem -Path tests -Include "*.Tests" -Directory -Recurse)
 $testDirs += @(Get-ChildItem -Path tests -Include "*.IntegrationTests" -Directory -Recurse)
 $testDirs += @(Get-ChildItem -Path tests -Include "*FunctionalTests" -Directory -Recurse)
 
+$i = 0
 ForEach ($folder in $testDirs) { 
     echo "Testing $folder"
-    exec { & dotnet test $folder.FullName -c Release --no-build --no-restore }
+
+    $i++
+    $format = @{ $true = "/p:CoverletOutputFormat=opencover"; $false = ""}[$i -eq $testDirs.Length ]
+
+    exec { & dotnet test $folder.FullName -c Release --no-build --no-restore /p:CollectCoverage=true /p:CoverletOutput=$root\coverage /p:MergeWith=$root\coverage.json /p:Include="[*]Firestorm.*" /p:Exclude="[*]Firestorm.Testing.*" $format }
 }
 ```
 
-AppVeyor still recognises the test output and displays results in the **Tests** tab.
+Next we want to upload our coverage report to CodeCov. Sign up using GitHub OAuth and you don't even need to use any API keys. Just install CodeCov via chocolatey and run the tool.
+
+```powershell
+choco install codecov --no-progress
+exec { & codecov -f "$root\coverage.opencover.xml" }
+```
+
+Coverage reports will now appear in CodeCov.
 
 # Pack
 
@@ -140,14 +158,14 @@ This tells AppVeyor that our NuGet packages will be in this directory.
 
 At the top of our build script, we define the full artifacts path and clear its current contents if there are any.
 
-```ps
+```powershell
 $artifactsPath = (Get-Item -Path ".\").FullName + "\artifacts"
 if(Test-Path $artifactsPath) { Remove-Item $artifactsPath -Force -Recurse }
 ```
 
 After building and testing, we pack the full solution, specifying the full output directory.
 
-```ps
+```powershell
 exec { & dotnet pack -c Release -o $artifactsPath --include-symbols --no-build $versionSuffix }
 ```
 
@@ -190,12 +208,18 @@ AppVeyor does not give PR builds access to secure variables in public projects. 
 
 As a final touch, add these to the top of your `README.md` file.
 
-[![Build status](https://ci.appveyor.com/api/projects/status/1bo4yw50e7m7m2cm?svg=true)](https://ci.appveyor.com/project/connellw/firestorm) [![MyGet](https://img.shields.io/myget/firestorm/v/Firestorm.Endpoints.svg?label=myget)](https://myget.org/gallery/firestorm) [![NuGet](https://img.shields.io/nuget/v/Firestorm.Endpoints.svg)](https://www.nuget.org/packages?q=firestorm)
+[![Build status](https://ci.appveyor.com/api/projects/status/1bo4yw50e7m7m2cm?svg=true)](https://ci.appveyor.com/project/connellw/firestorm) [![codecov](https://codecov.io/gh/connellw/Firestorm/branch/master/graph/badge.svg)](https://codecov.io/gh/connellw/Firestorm) [![MyGet](https://img.shields.io/myget/firestorm/vpre/Firestorm.Endpoints.svg?label=myget)](https://myget.org/gallery/firestorm) [![NuGet](https://img.shields.io/nuget/v/Firestorm.Endpoints.svg)](https://www.nuget.org/packages?q=firestorm)
 
 AppVeyor provides *sample markdown code* you can copy under the project's **Settings** tab.
 
 ```md
 [![Build status](https://ci.appveyor.com/api/projects/status/1bo4yw50e7m7m2cm?svg=true)](https://ci.appveyor.com/project/connellw/firestorm)
+```
+
+Similarly, CodeCov provides this under the project's **Settings** tab.
+
+```md
+[![codecov](https://codecov.io/gh/connellw/Firestorm/branch/master/graph/badge.svg)](https://codecov.io/gh/connellw/Firestorm)
 ```
 
 For the other badges I use [shields.io](https://shields.io/). You can get a badge for pretty much anything here. And even if you can't, you can make them.
@@ -208,7 +232,7 @@ The link I've just set to search NuGet.org, rather than linking to one of the pa
 [![NuGet](https://img.shields.io/nuget/v/Firestorm.svg)](https://www.nuget.org/packages?q=firestorm)
 ```
 
-For MyGet, you have to add the feed name to the URL too. `https://img.shields.io/myget/firestorm/v/Firestorm.svg`. I've also used the querystring to chang the text to 'myget'.
+For MyGet, you have to add the feed name to the URL too. `https://img.shields.io/myget/firestorm/vpre/Firestorm.svg`. I've also specified `vpre` to display the latest pre-release version, and I've used the querystring to change the text to 'myget'.
 
 For the link, you can use the public gallery page. You have to enable this manually in your MyGet feed settings.
 
