@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Introducing Reflectious
+tags: firestorm
 ---
 
 Whilst developing Firestorm, I noticed I was often combining Expression Trees with Reflection code. I'd find a static LINQ method, pass it a lambda expression argument and throw the whole thing into Expression.Call. 

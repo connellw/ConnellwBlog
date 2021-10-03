@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Open Source CI pipeline for .NET with AppVeyor
+tags: ci/cd
 ---
 
 Plenty of tools offer **free** licenses for open source projects. Often they work quite nicely with eachother. In this post I'll show how GitHub, AppVeyor, MyGet and CodeCov can work together in a complete CI/CD pipeline.

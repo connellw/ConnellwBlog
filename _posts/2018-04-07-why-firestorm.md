@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Why Firestorm?
+tags: firestorm rest-api
 ---
 
 [Firestorm](https://github.com/connellw/Firestorm) is a little thing I was working on that turned into a bigger thing I'm still working on a year later. As it grew, it spawned another little thing that'll probably turn into a bigger thing too. Rinse and repeat. Sound familiar?
