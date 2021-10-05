@@ -28,7 +28,7 @@ This is the fundamental principle behind the Ports and Adapters architecture. By
 
 There aren't transitive dependencies to the infrastructure this way either, so you can't even accidentally use functionality from `EntityFramework` in the business logic layer.
 
-
+..... bit on driven and dirving adapters .....
 
 
 # Visual Shapes
