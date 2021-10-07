@@ -6,36 +6,44 @@ tags: architecture ddd cqrs
 
 A lot of software engineering is about drawing boxes, deciding how to break down the code we write. We don't just write everything in the `Main` method in `Program.cs`; we set boundaries, create abstractions, and divide things into single responsibilities.
 
-In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries within an application.
+In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries. At each level we decide what is internal and what becomes our **public contracts**.
 
-.... diagram ....
+Once we've split everything up into boxes, we stitch it all back together again using some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless; the arrows represent a **direction of dependency**, where a box "knows of" the other box it is pointing to. At least, it knows the public contracts, not the internals.
 
-Once we've split everything up into boxes, we stitch it all back together again using some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless; the arrows here represent a **direction of dependency**, where a box "knows of" the other box it is pointing to. At least, it knows the `public` things from that box, not the internals.
+We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency**. The compiler will error if we attempt this between projects. With other boxes, it's possible, but not recommended, due to the high-coupling it creates.
+
+![Boxes and Arrows](/images/diagrams/boxes-and-arrows.png)
 
 # Inverting Project Dependency
 
 Many developers will be familiar with the N-Tier project architecture. Usually 3 layers: presentation, business logic and data access. We say the data access layer doesn't *know of* the business logic that is making calls to it; it just puts things in a database. Similarly, the business logic doesn't *know of* the API. In this architecture, the direction of dependency goes in the same direction as the **flow of control**, which is the direction method calls are made. You can think of control as *calling* or *driving*; which code tells which what to do and when to do it.
 
-.... N tier diagram ....
+![Boxes and Arrows](/images/diagrams/n-tier.png)
 
 These arrows do not have to point in the same direction. For example, if a `Service` class in the business logic layer *knows of* an `IRepository` interface, and the `Repository` implementation also *knows of* the `IRepository` interface, all we need to do is move the interface to the business logic layer, and suddenly the data access layer must have a reference to the business logic layer. We've inverted the project dependency.
 
-.... flipped diagram ....
+![Boxes and Arrows](/images/diagrams/n-tier-flipped-interface.png)
 
 ## Ports and Adapters
 
-This is the fundamental principle behind the Ports and Adapters architecture. By inverting that project dependency, the **business logic has no dependencies**. It becomes easily testable, as there are no databases, no HTTP requests; it's pure C# code.
+This is the fundamental principle behind the Ports and Adapters architecture. By inverting that project dependency, the **business logic has no dependencies**. There aren't even transitive dependencies to the infrastructure this way, so you can't accidentally use functionality from `EntityFramework` in the business logic layer. It becomes easily testable, as there are no databases, no HTTP requests; it's pure C# code.
 
-The business logic defines the `IRepository` and the entity objects that it uses as a public **port**. It says:
+Instead, the business logic defines the `IRepository` and the entity objects that it uses as a public **port**. It says:
 > Here is a port that I know how to use. Please, someone implement this port.
 
 Other projects can implement the interfaces by creating **adapters**. We could create an `EfRepository` that implements our business logic's port and wraps up Entity Framework's `DbSet`. This is the Adapter pattern.
 
-There aren't even transitive dependencies to the infrastructure this way, so you can't accidentally use functionality from `EntityFramework` in the business logic layer.
+```csharp
+adapter pattern example
+```
+
+## Hexagonal Architecture
 
 Ports and Adapters was originally called the Hexagonal Architecture. There is nothing special about the number six here, it is just a nice way to visualise the architecture. It's diagrams tend to use a hexagon in the middle, but the shape doesn't matter; it can just as easily be drawn as a circle.
 
 Onion Architecture is just Ports and Adapters architecture, but the business logic layer is further divided into domain logic and application logic.
+
+...... diagram with ports and adapters and domain ....
 
 # The Domain Layer with DDD
 
@@ -49,7 +57,7 @@ Domain Events are written in past tense, such as `AccountRegistered` or `Payment
 
 When an event is raised, the domain doesn't *know* who's listening. It kind of calls out to anyone who has subscribed to the event in advanced, but it doesn't know who. The control flows out of the domain to an event handler, but it is the handler that *knows of* the event. Again, we have inverted the dependency. Like Ports and Adapters, raising events is another technique that allows the control to flow in the opposite direction to the project reference.
 
-...... sequence-ish diagram for domain ......
+![Boxes and Arrows](/images/diagrams/sequence-ish-domain.png)
 
 Events usually represent a change to the state of a domain **entity**. Entities and other domain objects are grouped together into clusters called **aggregates**, which provide a consistency boundary and can enforce the business rules of the domain.
 
@@ -59,7 +67,7 @@ And finally, the **unit of work** is another abstraction, this time for a data t
 
 I like to think of the data abstractions as sitting in a thin layer just on the edge of the domain layer. In Onion Architecture, dependencies go inwards, so my repositories *know of* my aggregates, but not the other way round.
 
-..... diagram with red circle, repo layer, and building blocks? .....
+![Boxes and Arrows](/images/diagrams/onion-domain-repo-blocks.png)
 
 # The Application Layer with CQRS
 
@@ -91,7 +99,7 @@ CommandHandler example with multiple and dispatch
 
 I like to view the whole application layer as this transaction boundary. From outside, we just send a command, and it either succeeds or it doesn't.
 
-.... sequence-ish diagram with blue red everything .....
+![Infrastructure layer](/images/diagrams/sequence-ish-command.png)
 
 ## The Query Side
 
@@ -107,7 +115,7 @@ QueryHandler example
 
 We have the freedom to do powerful things here. We could use Dapper to execute queries that join several tables together. We could even read from a totally different database to our write side, called a **read store**.
 
-.... sequence-ish diagram with blue and projection? .....
+![Infrastructure layer](/images/diagrams/sequence-ish-query.png)
 
 CQRS gives us the power to scale the two concerns independently. We can optimise a query that uses joins by moving to use a denormalised table designed for the query instead. The table can be sourced by handling domain events, so that the query results are saved at the time the command is executed, instead of on-the-fly.
 
@@ -125,24 +133,32 @@ This isn't possible with a totally different database. Instead, we must **schedu
 DomainEventHandler scheduling a job
 ```
 
-...... diagram with 3 building blocks of application layer too ......
+![Boxes and Arrows](/images/diagrams/onion-application-cqrs.png)
 
 # The Infrastructure Layer
 
-The outermost layer integrates our application with the outside world, such as networks and databases.
+The outermost layer integrates our application with the outside world, such as networks, databases or a message bus. We'd most likely see a **persistence** project here, responsible for implementing our `IRespository` interfaces.
 
-.... Event Bus? ....
+Being the layer that can communicate outside our application, we'd expect to see projects that understand external APIs. Calls will often be *driven* by the application. For example, a project responsible for making calls to PayPal might implement an adapter for an `IMoneySender` port.
 
 ## The Presentation Layer
 
-This layer is sometimes divided into two. One half is our **presentation layer**, which will send our commands and queries into our application.
+The infrastructure is sometimes divided into two. One half is our **presentation layer**, which will send our commands and queries into our application.
 
-....... Public contracts (maybe not?) ACL, control vs dependency, symmetry ......
+Sometimes this split is divded by the flow of control, with driving adapters on one side and driven adapters on another. If we think of these layers as `csproj` projects, this would mean the API calls into the application and the external APIs on the back-end are called by the application. This is not always the case. An external API may provide WebHooks that call back into the infrastructure layer. Similarly, our own API may have some push functionality, such as WebHooks or SignalR.
 
-...... diagram with 3 building blocks of application layer too ......
+Instead, I like to think of the presentation layer as containing my public contracts, whether the control flows in or out. This means integration events belong on this side of my diagram; they are documented alongside my API and are part of what I present to the world outside of the service.
+
+![Infrastructure layer](/images/diagrams/onion-infrastructure-focus.png)
+
+In a microservices architecture, the external API libraries may reference another microservice. We still want to avoid circular dependencies at this higher level, so this gives our whole system architecture a flow of dependency, with core services on the right hand side of our diagram.
+
+![Infrastructure layer](/images/diagrams/microservices-onion.png)
 
 # TL;DR
 
 I call controllers in the presentation layer, which send commands to my application layer, which load aggregates from the domain layer, using repositories which are implemented in the infrastructure layer as an adapter to the write store.
 
 Aggregates are made up of entities and value objects. They handle all changes and raise domain events, which are handled in the application layer, either by making further changes to aggregates, or by writing to a read store, which can later be queried by controllers or resilient jobs, such as publishing integration events, writing to an external read store, or calling external APIs.
+
+![Infrastructure layer](/images/diagrams/onion-tldr.png)

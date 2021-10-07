@@ -6,11 +6,15 @@ tags: architecture
 
 A lot of software engineering is about drawing boxes, deciding how to break down the code we write. We don't just write everything in the `Main` method in `Program.cs`; we set boundaries, create abstractions, and divide things into single responsibilities.
 
-In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries within an application.
+In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries. At each level we decide what is internal and what becomes our **public contracts**.
 
-.... diagram ....
+![Boxes and Arrows](/images/diagrams/boxes-no-arrows.png)
 
-Once we've split everything up into boxes, we stitch it all back together again using some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless; the arrows here represent a **direction of dependency**, where a box "knows of" the other box it is pointing to. At least, it knows the `public` things from that box, not the internals.
+Once we've split everything up into boxes, we stitch it all back together again using some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless; the arrows represent a **direction of dependency**, where a box "knows of" the other box it is pointing to. At least, it knows the public contracts, not the internals.
+
+We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency**. The compiler will error if we attempt this between projects. With other boxes, it's possible, but not recommended, due to the high-coupling it creates.
+
+![Boxes and Arrows](/images/diagrams/boxes-and-arrows.png)
 
 # Inverting Project Dependency
 
@@ -34,3 +38,11 @@ There aren't transitive dependencies to the infrastructure this way either, so y
 # Visual Shapes
 
 Ports and Adapters was originally called the Hexagonal Architecture. There is nothing special about the number six here, it is just a nice way to visualise the architecture.
+
+# Presentation
+
+- Documentation
+- Integration Events
+
+# Microservices
+
