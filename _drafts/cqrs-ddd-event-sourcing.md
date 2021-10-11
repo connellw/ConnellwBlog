@@ -4,6 +4,14 @@ title: CQRS, DDD and Event Sourcing
 tags: cqrs ddd
 ---
 
+- Maybe split out DDD bits, but reference them from another post?
+- Make this about:
+    - Domain Events
+    - Integration Events
+    - Transaction Boundary
+    - Event Sourcing
+    - Eventual Consistency
+
 # The Domain Layer with DDD
 
 At the heart of our application is a single project with no dependencies. For this, we will use **Domain-Driven Design**. This is not a requirement of Onion Architecture, but it is a convinient way to divide our logic.

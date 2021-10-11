@@ -20,7 +20,7 @@ Many developers will be familiar with the N-Tier project architecture. Usually 3
 
 ![N-Tier Architecture](/images/diagrams/n-tier.png)
 
-These arrows do not have to point in the same direction. For example, if a `Service` class in the business logic layer *knows of* an `IRepository` interface, and the `Repository` implementation also *knows of* the `IRepository` interface, all we need to do is move the interface to the business logic layer, and suddenly the data access must reference to the business logic instead. We've inverted the project dependency.
+These arrows do not have to point in the same direction. For example, if a `Service` class in the business logic layer *knows of* an `IRepository` interface, and the `Repository` implementation also *knows of* the `IRepository` interface, all we need to do is move the interface to the business logic layer, and suddenly the data access must reference the business logic instead. We've inverted the project dependency.
 
 ![Data access depending on business logic](/images/diagrams/n-tier-flipped-interface.png)
 
@@ -54,9 +54,9 @@ public class EntityFrameworkRepository : IRepository
 
 ## Hexagonal Architecture
 
-Ports and Adapters was originally called the Hexagonal Architecture. There is nothing special about the number six here, it is just a nice way to visualise the architecture. It's diagrams tend to use a hexagon in the middle, but the shape doesn't matter; it can just as easily be drawn as a circle.
+Ports and Adapters was originally called the Hexagonal Architecture. There is nothing special about the number six here. It's just a nice way to visualise the architecture. It's diagrams tend to use a hexagon in the middle, but the shape doesn't matter; it can just as easily be drawn as a circle.
 
-Onion Architecture is just Ports and Adapters architecture, but the business logic layer is further divided into domain logic and application logic. We draw the layers as circles around each other, and the direction of dependency goes inwards.
+Onion Architecture is just Ports and Adapters architecture, but the business logic layer is further divided into domain logic and application logic. We draw the layers as circles around each other and the direction of dependency goes inwards.
 
 ![Onion Architecture](/images/diagrams/onion-circular.png)
 
@@ -88,7 +88,7 @@ I like to think of the data abstractions as sitting in a thin layer just on the 
 
 # The Application Layer with CQRS
 
-The layer just outside of the domain layer, we're going to build using **Command Query Responsibility Segregation**. This means our application layer will be made up of two sub-systems: a command side, responsible for executing tasks and making changes to our domain; and a query side, responsible only for getting data.
+We're going to build the layer just outside of the domain layer using **Command Query Responsibility Segregation**. This means our application layer will be made up of two sub-systems: a command side, responsible for executing tasks and making changes to our domain; and a query side, responsible only for getting data.
 
 Both sides will be entirely separated from each other. They won't share any models or classes. This is essentially the **opposite of CRUD**. I found this difficult to grasp at first, because I was designing RESTful APIs as the front-end. I instinctively thought of writing a certain resource to a location, and then getting that same shape back out of that location, which is breaking the only rule of CQRS; separate the read and write concerns.
 
@@ -149,7 +149,7 @@ I like to view the whole application layer as this transaction boundary. From ou
 
 ## The Query Side
 
-The other half of our application will be handle reads. Think about what information we need to know, then we can directly return that ViewModel.
+The other half of our application will handle reads. Think about what information we need to know, then we can directly return that ViewModel.
 
 Query objects look very similar to Commands, and are handled similarly with a `QueryHandler` class.
 
@@ -158,16 +158,19 @@ However, in this side, we don't want to use our repositories, aggregates or enti
 ```csharp
 public class GetBreakfastQueryHandler : IQueryHandler<GetBreakfastQuery>
 {
-    private readonly IBreakfastFinder _finder;
+    private readonly IBreakfastQueryable _queryable;
 
-    public GetBreakfastQueryHandler(IBreakfastFinder finder)
+    public GetBreakfastQueryHandler(IBreakfastQueryable queryable)
     {
-        _finder = finder;
+        _queryable = queryable;
     }
 
     public async Task<Breakfast> Handle(GetBreakfastQuery query)
     {
-        var ingredients = await _finder.Find(query.DietaryRequirements.IsVegetarian);
+        var ingredients = await _queryable
+            .Where(i => i.IsVegetarian == query.IsVegetarian)
+            .Select();
+
         return new Breakfast(ingredients);
     }
 }
@@ -204,7 +207,7 @@ public class TinOpenedDomainEventHandler : IDomainEventHandler<TinOpenedEvent>
 }
 ```
 
-This isn't possible with a totally different database. Instead, we must **schedule a job** to write the changes after the transaction has committed. The scheduling itself must be done within the transaction, so I like to view this as just writing to another read store (the jobs store) which is later queried by a job processor. When the job is executed, the changes have already been made and we cannot throw an error when processing the job. The job must therefore be processed with a retry mechanism to ensure it is processed.
+This isn't possible with a totally different database. Instead, we must **schedule a job** to write the changes after the transaction has committed. The scheduling itself must be done within the transaction, so I like to view this as just writing to another read store (the jobs store) which is later queried by a job processor. When the job is executed, the changes have already been made, so we cannot throw an error when processing the job. The job must therefore be processed with a retry mechanism to ensure it completes.
 
 ```csharp
     public async Task Handle(TinOpenedEvent domainEvent)
