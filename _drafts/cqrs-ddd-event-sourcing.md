@@ -14,7 +14,7 @@ A great way to develop this language is **Event Storming**, where the domain exp
 
 Domain Events are written in past tense, such as `AccountRegistered` or `PaymentTaken`, because they have already happened at the time we initialise them. Once they're initialised, the objects are immutable; you cannot go back and change the past.
 
-When an event is raised, the domain doesn't *know* who's listening. It kind of calls out to anyone who has subscribed to the event in advanced, but it doesn't know who. The control flows out of the domain to an event handler, but it is the handler that *knows of* the event. Again, we have inverted the dependency. Like Ports and Adapters, raising events is another technique that allows the control to flow in the opposite direction to the project reference.
+When an event is raised, the domain doesn't *know* who's listening. It calls out to anyone who has subscribed to the event in advanced, but it doesn't know who. The control flows out of the domain to an event handler, but it is the handler that *knows of* the event. Again, we have inverted the dependency. Like Ports and Adapters, raising events is another technique that allows the control to flow in the opposite direction to the project reference.
 
 ...... sequence-ish diagram for domain ......
 
@@ -43,7 +43,26 @@ For commands, think task-based, rather than resource-based. What are we actually
 3. Committing the `IUnitOfWork`.
 
 ```csharp
-CommandHandler example
+public class OpenTinCommandHandler
+{
+    private readonly ITinRepository _tinRepository;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public OpenTinCommandHandler(ITinRepository repository, IUnitOfWork unitOfWork)
+    {
+        _repository = repository;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task Handle(OpenTinCommand command)
+    {
+        var tin = await _repository.Get(command.TinId);
+
+        tin.Open();
+
+        await _unitOfWork.Commit();
+    }
+}
 ```
 
 Note that this command returns only a `Task`. We're not going to return any business data. Certainly not our read models.
@@ -58,7 +77,11 @@ CommandHandler example with multiple and dispatch
 
 I like to view the whole application layer as this transaction boundary. From outside, we just send a command, and it either succeeds or it doesn't.
 
-.... sequence-ish diagram with blue red everything .....
+### Dispatching Events
+
+![CQRS command sequence-ish](/images/diagrams/sequence-ish-command.png)
+
+### MediatR
 
 ## The Query Side
 
@@ -78,6 +101,10 @@ We have the freedom to do powerful things here. We could use Dapper to execute q
 
 CQRS gives us the power to scale the two concerns independently. We can optimise a query that uses joins by moving to use a denormalised table designed for the query instead. The table can be sourced by handling domain events, so that the query results are saved at the time the command is executed, instead of on-the-fly.
 
+### Eventual Consistency
+
+??
+
 ## Jobs and Resiliency
 
 Writing to the **read store** can be done as part of the same database transaction to ensure consistency between the read and write sides. This is done by making changes to another table in a `DomainEventHandler`, which is handled within the same `UnitOfWork` as the command execution.
@@ -93,3 +120,9 @@ DomainEventHandler scheduling a job
 ```
 
 ...... diagram with 3 building blocks of application layer too ......
+
+## Integration Events
+
+- Outside of the blue circle
+
+### Event Stream

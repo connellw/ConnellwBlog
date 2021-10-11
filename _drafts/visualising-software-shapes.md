@@ -4,6 +4,8 @@ title: Visualising Software in Shapes
 tags: architecture
 ---
 
+- Note that these layers are not necessarily csproj.
+
 A lot of software engineering is about drawing boxes, deciding how to break down the code we write. We don't just write everything in the `Main` method in `Program.cs`; we set boundaries, create abstractions, and divide things into single responsibilities.
 
 In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries within an application.
@@ -33,4 +35,6 @@ I had a go myself once.
 Onion Architecture is just Ports and Adapters architecture, but the business logic layer is further divided into domain logic and application logic.
 
 ## Castle Architecture
+
+## Explicit Architecture
 
