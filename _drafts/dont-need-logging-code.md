@@ -4,6 +4,10 @@ title: You Don't Need Logging Code
 tags: aop logging decorator
 ---
 
+- More drawing boxes
+- Extra box for "stuff I want to log"
+    - Just use the existing boxes.
+
 Single Responsibility. Separation of Concerns.
 
 The time consumed talking about it. What to log, when to log them, what level to log at.
