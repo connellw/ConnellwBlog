@@ -4,6 +4,8 @@ title: Software is about Drawing Boxes
 tags: architecture
 ---
 
+We create boundaries all the time; it’s a key part of designing software. We put things in methods, classes, libraries, microservices. We make things private, protected, internal. It’s one of the most important things we do.
+
 A lot of software engineering is about drawing boxes, deciding how to break down the code we write. We don't just write everything in the `Main` method in `Program.cs`; we set boundaries, create abstractions, and divide things into single responsibilities.
 
 In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, deciding that some are `internal`, and then the same again with libraries. At each level we decide what is internal and what becomes our **public contracts**.
