@@ -4,6 +4,9 @@ title: You Don't Need Logging Code
 tags: aop logging decorator
 ---
 
+- Link from Domain-Driven Boundaries
+> I have made the mistake of letting the domain model be influenced by technical requirements: maintainability, performance, connectivity with other domains, or [monitoring concerns](/dont-need-logging-code.md).
+
 - More drawing boxes
 - Extra box for "stuff I want to log"
     - Just use the existing boxes.
