@@ -10,7 +10,7 @@ At it’s core, Domain-Driven Design is about building shared models as a collab
 
 In [Martin Fowler’s post on Bounded Contexts](https://martinfowler.com/bliki/BoundedContext.html), he explains that instead of building one unified model to describe the entire business, it's more cost-effective to divide the system into several contexts.
 
-Some concepts exist in multiple contexts, but may have different models or use different terms. Equally, some terms may describe different concepts within different contexts. Each context uses it's own **Ubiquitous Language** within its boundary.
+Some concepts exist in multiple contexts, but may have different models or use different terms. Equally, some terms may describe different concepts within different contexts. Each context uses its own **Ubiquitous Language** within its boundary.
 
 ![Bounded Contexts example](/images/diagrams/bounded-contexts.png)
 
@@ -32,6 +32,6 @@ Nowadays, [identifying Bounded Contexts can help design a microservices architec
 
 It's too easy to get caught out by this convenient parallel, break down microservices like we're so used to doing with classes and libraries, then assert that those boundaries are now business domains.
 
-I have made the mistake of letting the domain model be influenced by technical requirements: maintainability, performance, connectivity with other domains, or monitoring concerns.
+I have made the mistake before of letting the domain model be influenced by technical requirements: maintainability, performance, connectivity with other domains, persistence concerns, or monitoring concerns.
 
 The problem with this reverse approach is that, if our domains are influenced by the technical design, we’re not speaking the same language any more; we’ve started to use technical jargon again. It’s harder to understand requirements, it’s harder to explain problems, harder to compromise, to prioritise, and ultimately it's much more costly to build software.
