@@ -5,6 +5,7 @@ tags: aop cqrs
 ---
 
 ASP.NET Core but without a controller.
+- Maybe note Minimal APIs?
 
 Middlewares
 - Logging & Monitoring
