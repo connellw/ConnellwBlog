@@ -191,7 +191,7 @@ public class TinOpenedDomainEventHandler : IDomainEventHandler<TinOpenedEvent>
 {
     private readonly IStatsCollection _statsCollection;
 
-    public GetBreakfastQueryHandler(IStatsCollection statsCollection)
+    public TinOpenedDomainEventHandler(IStatsCollection statsCollection)
     {
         _statsCollection = statsCollection;
     }
