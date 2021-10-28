@@ -18,7 +18,7 @@ Some concepts exist in multiple contexts, but may have different models or use d
 
 We create boundaries all the time; it’s a key part of designing software. We put things in methods, classes, libraries, microservices. We make things private, protected, internal. It’s one of the most important things we do.
 
-But whilst we’re very familiar with creating our own boundaries, practicing DDD means we should use the boundaries that already exist in the business. The challenge for us is to understand those business boundaries, develop models with the domain experts, then design a system based on those models. Otherwise our technical boundaries just become constraints that make solving business problems difficult and expensive.
+But whilst we’re very familiar with creating our own boundaries, practicing DDD means our architecture should use the boundaries that already exist in the business. The challenge for us is to understand those business boundaries, develop models with the domain experts, then design systems based on those models. Otherwise our technical boundaries just become constraints that make solving business problems difficult and expensive.
 
 To achieve this, the business experts must be involved in the modelling process. Together we can use processes like [Context Mapping](https://www.infoq.com/articles/ddd-contextmapping/) to help identity boundaries and [Event Storming](https://en.wikipedia.org/wiki/Event_storming) to build the Ubiquitous Language.
 
@@ -32,6 +32,6 @@ Nowadays, [identifying Bounded Contexts can help design a microservices architec
 
 It's too easy to get caught out by this convenient parallel, break down microservices like we're so used to doing with classes and libraries, then assert that those boundaries are now business domains.
 
-I have made the mistake before of letting the domain model be influenced by technical requirements: maintainability, performance, connectivity with other domains, persistence concerns, or monitoring concerns.
+I have made the mistake before of inventing language to solve technical problems in the model. Creating abstractions for maintainability, connectivity, persistence concerns, or monitoring concerns.
 
-The problem with this reverse approach is that, if our domains are influenced by the technical design, we’re not speaking the same language any more; we’ve started to use technical jargon again. It’s harder to understand requirements, it’s harder to explain problems, harder to compromise, to prioritise, and ultimately it's much more costly to build software.
+The problem with this is that, if our domain boundaries or models are driven by the technical design, we’re not speaking the same language any more; we’ve started to use technical jargon again. It’s harder to understand requirements, it’s harder to explain problems, harder to compromise, to prioritise, and ultimately it's much more costly to build software.
