@@ -1,82 +1,121 @@
 ---
 layout: post
-title: API with ASP.NET Middleware Pipeline
+title: Look, No Controllers
 tags: aop cqrs
 ---
 
-Those that have worked with me will know I'm a big advocate for Aspect-Oriented Programming. I generally like to "bolt on" concerns that sit outside of the main logic into decorators or any pattern that can wrap around a class or method, which follows the Open/Closed principle.
+Those that have worked with me will know I'm a big advocate for Aspect-Oriented Programming. I generally like to "bolt on" concerns that sit outside of the main logic using the **decorator pattern** or a behaviour that can wrap around a class or method, which follows the Open/Closed principle.
 
-When following this principle and writing many decorators, I've found that changing a public method signature is more of a chore. Adding new parameters means I have to update the decorators too, most of which will not even use the shiny new parameter anyway. Instead, these methods are more maintainable if we use a single object parameter and add properties to that object when needed.
+When following this principle, I've found that changing a public method signature is more of a chore. Adding new parameters means I have to update the decorators too, most of which will not even use the shiny new parameter anyway. Instead, these methods are more maintainable if we use a single object parameter and add properties to that object when needed.
 
 ```c#
-c# example
+public Task DoTheThing(ThingContext context)
+{
+}
 ```
 
-This leads me to controllers. Rather than adding a new parameter with a `[FromRoute]` or [FromQuery]` attribute, it's possible to just have one object and add the attributes to a property of that object. Following this rule means I don't break as many unit tests when I change the Action's signature too.
+So in controllers, rather than adding a new parameter with a `[FromRoute]` or `[FromQuery]` attribute, it's possible to just have one object and add the attributes to a property of that object. Following this rule means I don't break as many unit tests when I change the action's signature too.
 
-But now all my controller actions look the same. They're all now just boilerplate methods that follow the same rules:
-1. MVC model binding passes in a request object.
-2. Validate that object with FluentValidation
-3. Map that object to a MediatR request and send it
-4. Catch errors and return a generic error response
-5. Map the MediatR response to an API response and return that
+But now all my controller actions look the same. They're all just boilerplate methods that follow the same step-by-step process. Which got me asking,
+> Can I write this process once? Can I write a generic pipeline for every HTTP request? Can I get rid of the controllers?
 
-Which got me asking. Can I write this once? Can I write up that pipeline somewhere, and have this stuff automatically happen for every request?
+I want each request to follow the same basic pipeline:
+1. Bind the HTTP request to a model
+2. Pass that through a validator
+3. Send it to [MediatR](https://github.com/jbogard/MediatR)
+4. Map the result to some response
 
-I toyed with Minimal APIs, some kind of generic controller, but eventually I thought it might be fun to roll my own. It might not even be too complicated, especially if I can hook into MVC's model binding. Introducing [Uncontrollable](https://github.com/connellw/Uncontrollable).
+I toyed with Minimal APIs, some kind of generic controller, but eventually I thought it might be fun to roll my own. Introducing **[Controlless](https://github.com/connellw/Controlless)**.
 
 # Binding
 
 All requests are just DTOs (data transfer objects).
 
 ```c#
-public class UpdateThingDetailsRequest
+public class WatchFilmRequest
 {
-    public string ThingId { get; set; }
+    public string FilmId { get; set; }
 
-    public string Name { get; set; }
-
-    public string Type { get; set; }
+    public DateTime DateWatched { get; set; }
 }
 ```
 
-For each request, register a **RequestBinder** which maps parts of the request body, route, or query.
+For each request, register an `IRequestBinder` implementation which maps parts of the request body, route, or query. I wrote a `TryMatchRoute` extension to [manually match against a route template](https://blog.markvincze.com/matching-route-templates-manually-in-asp-net-core/) to make writing these a bit easier.
 
-I think it would be cool in future to hook into MVC's model binding and have this all work automatically using the `[FromBody]`, `[FromRoute]` and `[FromQuery]` attributes.
+```c#
+internal class WatchFilmRequestBinder : IRequestBinder
+{
+    public object? Bind(HttpRequest request, CancellationToken ct)
+    {
+        if(request.Method != "POST" || !request.TryMatchRoute("/films/{id}/watch", out var routeValues))
+            return null;
+            
+        return new WatchFilmRequest
+        {
+            FilmId = routeValues["id"],
+            // set other props from query or body
+        };
+    }
+}
+```
+
+This can still get a bit bloated when you have to parse strings or read from the body stream. I think it would be even better to hook into MVC's model binding and have this work automatically using the `[FromBody]`, `[FromRoute]` and `[FromQuery]` attributes. This could be done using a single `IRequestBinder`.
 
 # Handling
 
-## Validation
+Once a request object exists, it is passed into whatever implementation of `IRequestHandler<WatchFilmRequest>` is registered, which should be familiar to developers who have used MediatR or NServiceBus.
 
-## MediatR
+This is where we're going to implement a generic pipeline as one generic class.
 
-MediatR also has it's own pipeline. Perhaps we actually want to move our validation there.
+```c#
+internal class GenericRequestHandler<T> : Uncontrollable.IRequestHandler<T>
+{
+    private readonly IValidator<T> _validator;
+    private readonly IMediator _mediator;
 
-- Dispatch domain events
-- Commit unit of work
+    public GenericRequestHandler(IValidator<T> validator, IMediator mediator)
+    {
+        _validator = validator;
+        _mediator = mediator;
+    }
+
+    public async Task<object> Handle(T request, CancellationToken ct)
+    {
+        var validationResult = _validator.Validate(request);
+
+        if(validationResult.IsValid == false)
+            return validationResult.Errors;
+
+        return await _mediator.Send(request, ct);
+    }
+}
+```
+
+MediatR has [it's own pipeline](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/), where usually I would will also dispatch domain events and commit the unit of work. We could easily to move our validation to that pipeline instead.
+
+The main difference is that the MediatR request handler must return the defined response type, whereas the Uncontrollable handler can return any object.
 
 # Responding
 
-Once a response object has been returned from a handler, we need a way to write it back to the HTTP stream. The most obvious is to register a generic `JsonResponseWriter` that by default serializes the response.
+Once a response object has been returned from a handler, we need a way to write it back to the HTTP stream. The most obvious is to register a generic `JsonResponseWriter` that by default serializes the response and is included by default.
 
 For some response objects, however, we might want to set different status codes. For specific cases, we can register more specific `IResponseWriter<>` implementations which will be used as priority. The priority order is however the DI container works, which usually means you'll want to register the specific handler after the generic handler.
 
-# Exceptions
+```c#
+internal class ValidationFailureJsonResponseWriter : IResponseWriter<List<ValidationFailure>>
+{
+    public async Task Write(List<ValidationFailure> responseObject, HttpResponse response)
+    {
+        response.StatusCode = 400;
+        await response.WriteAsJsonAsync(responseObject);
+    }
+}
+```
 
-If the handler throws an exception
+# Exceptions and Logging
 
-------
+Errors from the handlers will propagate up to the [normal ASP.NET Core exception handlers](https://docs.microsoft.com/en-us/aspnet/core/web-api/handle-errors?view=aspnetcore-5.0).
 
-ASP.NET Core but without a controller.
-- Maybe note Minimal APIs?
+Similarly, there's no special logging or tracing built into the framework. All of these concerns are cross-cutting and can be handled in the ASP.NET Core pipeline, such as with Middlewares.
 
-Middlewares
-- Logging & Monitoring
-- Error Handling
-- Find endpoint and deserialize DTO
-- Validation (FluentValidation)
-- Map to Command/Query (AutoMapper)
-
-Mediator
-- DispatchEvents
-- UnitOfWork
+Together, ASP.NET Core middlewares, Controlless and MediatR Pipeline Behaviors create a Aspect-Oriented feel and a very modular Web API solution that strictly obeys the Single Responsibility and Open/Closed principles.
