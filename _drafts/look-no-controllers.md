@@ -10,8 +10,6 @@ When following this principle, I've found that changing a public method signatur
 
 ```c#
 public Task DoTheThing(ThingContext context)
-{
-}
 ```
 
 So in controllers, rather than adding a new parameter with a `[FromRoute]` or `[FromQuery]` attribute, it's possible to just have one object and add the attributes to a property of that object. Following this rule means I don't break as many unit tests when I change the action's signature too.
@@ -29,46 +27,30 @@ I toyed with Minimal APIs, some kind of generic controller, but eventually I tho
 
 # Binding
 
-All requests are just DTOs (data transfer objects).
+All requests are just DTOs (data transfer objects). There are no controllers to perform the model binding though. Instead, just put the familiar-looking `[HttpGet]`, `[HttpPost]`, `[FromRoute]` and `[FromBody]` attributes straight onto the request object.
 
 ```c#
-public class WatchFilmRequest
+[HttpGet("/films/{id}/actors")]
+public class GetFilmActorsRequest
 {
+    [FromRoute("id")]
     public string FilmId { get; set; }
 
-    public DateTime DateWatched { get; set; }
+    [FromQuery("page")]
+    public int Page { get; set; }
 }
 ```
 
-For each request, register an `IRequestBinder` implementation which maps parts of the request body, route, or query. I wrote a `TryMatchRoute` extension to [manually match against a route template](https://blog.markvincze.com/matching-route-templates-manually-in-asp-net-core/) to make writing these a bit easier.
-
-```c#
-internal class WatchFilmRequestBinder : IRequestBinder
-{
-    public object? Bind(HttpRequest request, CancellationToken ct)
-    {
-        if(request.Method != "POST" || !request.TryMatchRoute("/films/{id}/watch", out var routeValues))
-            return null;
-            
-        return new WatchFilmRequest
-        {
-            FilmId = routeValues["id"],
-            // set other props from query or body
-        };
-    }
-}
-```
-
-This can still get a bit bloated when you have to parse strings or read from the body stream. I think it would be even better to hook into MVC's model binding and have this work automatically using the `[FromBody]`, `[FromRoute]` and `[FromQuery]` attributes. This could be done using a single `IRequestBinder`.
+Those attributes are actually replicas in the `Controlless` namespace. It would be pretty neat if this could hook straight into MVC's model binding.
 
 # Handling
 
-Once a request object exists, it is passed into whatever implementation of `IRequestHandler<WatchFilmRequest>` is registered, which should be familiar to developers who have used MediatR or NServiceBus.
+Once that request object exists, it is passed into whatever implementation of `IRequestHandler<GetFilmActorsRequest>` is registered, which should be familiar to developers who have used MediatR or NServiceBus.
 
 This is where we're going to implement a generic pipeline as one generic class.
 
 ```c#
-internal class GenericRequestHandler<T> : Uncontrollable.IRequestHandler<T>
+internal class GenericRequestHandler<T> : IRequestHandler<T>
 {
     private readonly IValidator<T> _validator;
     private readonly IMediator _mediator;
@@ -93,7 +75,7 @@ internal class GenericRequestHandler<T> : Uncontrollable.IRequestHandler<T>
 
 MediatR has [it's own pipeline](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/), where usually I would will also dispatch domain events and commit the unit of work. We could easily to move our validation to that pipeline instead.
 
-The main difference is that the MediatR request handler must return the defined response type, whereas the Uncontrollable handler can return any object.
+The main difference is that the MediatR request handler must return the defined response type, whereas the Controlless handler can return any object.
 
 # Responding
 
