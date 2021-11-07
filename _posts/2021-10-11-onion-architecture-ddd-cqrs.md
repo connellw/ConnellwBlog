@@ -240,9 +240,9 @@ Instead, I like to think of the presentation layer as containing my public contr
 
 ![Infrastructure layer building blocks](/images/diagrams/onion-infrastructure-focus.png)
 
-In a micro-services architecture, the external API libraries may reference another micro-service. We still want to avoid circular dependencies at this higher level, so this gives our whole system architecture a flow of dependency, with core services on the right hand side of our diagram.
+In a microservices architecture, the external API libraries may reference another micro-service. We still want to avoid circular dependencies at this higher level, so this gives our whole system architecture a flow of dependency, with core services on the right hand side of our diagram.
 
-![Micro-services architecture with onions](/images/diagrams/microservices-onion.png)
+![Microservices architecture with onions](/images/diagrams/microservices-onion.png)
 
 # TL;DR
 

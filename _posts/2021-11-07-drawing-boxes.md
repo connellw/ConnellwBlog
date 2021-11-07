@@ -30,7 +30,7 @@ There are a few exceptions to this rule. Circular references are quite common in
 
 Circular dependencies often come to existence due to a misconception that the direction of dependency must match the flow of control, but that is not the case. **Inversion of Control** can be achieved through **dependency injection**, where a class depends on an interface, but it doesn't know which implementation has been passed into it.
 
-We can invert the control using any form of [callback](https://en.wikipedia.org/wiki/Callback_(computer_programming)) mechanism, such as **subscribing to an event**. A publisher doesn't know who is listening to its calls, rather the subscriber knows what the event looks like and requests that it is called back to whenever the event happens.
+We can also invert the control using any form of [callback](https://en.wikipedia.org/wiki/Callback_(computer_programming)) mechanism, such as **subscribing to an event**. A publisher doesn't know who is listening to its calls, rather the subscriber knows what the event looks like and requests that it is called back to whenever the event happens.
 
 > Don't call us, we'll call you.
 > -- The Hollywood Principle
