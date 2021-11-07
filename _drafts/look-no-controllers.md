@@ -4,7 +4,7 @@ title: Look, No Controllers
 tags: aop cqrs
 ---
 
-Those that have worked with me will know I'm a big advocate for Aspect-Oriented Programming. I generally like to "bolt on" concerns that sit outside of the main logic using the **decorator pattern** or a behaviour that can wrap around a class or method, which follows the Open/Closed principle.
+Those that have worked with me will know I'm a big advocate for Aspect-Oriented Programming. I generally like to "bolt on" concerns that sit outside of the main logic using the **decorator pattern** or some kind of behaviour that can wrap around a class or method, which follows the Open/Closed principle.
 
 When following this principle, I've found that changing a public method signature is more of a chore. Adding new parameters means I have to update the decorators too, most of which will not even use the shiny new parameter anyway. Instead, these methods are more maintainable if we use a single object parameter and add properties to that object when needed.
 
@@ -27,7 +27,7 @@ I toyed with Minimal APIs, some kind of generic controller, but eventually I tho
 
 # Binding
 
-All requests are just DTOs (data transfer objects). There are no controllers to perform the model binding though. Instead, just put the familiar-looking `[HttpGet]`, `[HttpPost]`, `[FromRoute]` and `[FromBody]` attributes straight onto the request object.
+All requests are just DTOs (data transfer objects). There are no controllers to perform the model binding though. Instead, just put the familiar-looking `[HttpGet]` or `[HttpPost]` attributes straight onto the request object.
 
 ```c#
 [HttpGet("/films/{id}/actors")]
@@ -41,7 +41,7 @@ public class GetFilmActorsRequest
 }
 ```
 
-Those attributes are actually replicas in the `Controlless` namespace. It would be pretty neat if this could hook straight into MVC's model binding.
+That's it! The library [dynamically generates a controller for you](https://www.strathweb.com/2018/04/generic-and-dynamically-generated-controllers-in-asp-net-core-mvc/).
 
 # Handling
 
