@@ -16,7 +16,7 @@ Some concepts exist in multiple contexts, but may have different models or use d
 
 ## Identifying Boundaries
 
-We create boundaries all the time; it’s a key part of designing software. We put things in methods, classes, libraries, microservices. We make things private, protected, internal. It’s one of the most important things we do.
+We [create boundaries all the time](/drawing-boxes); it’s a key part of designing software. We put things in methods, classes, libraries, microservices. We make things private, protected, internal. It’s one of the most important things we do.
 
 But whilst we’re very familiar with creating our own boundaries, practicing DDD means our architecture should use the boundaries that already exist in the business. The challenge for us is to understand those business boundaries, develop models with the domain experts, then design systems based on those models. Otherwise our technical boundaries just become constraints that make solving business problems difficult and expensive.
 

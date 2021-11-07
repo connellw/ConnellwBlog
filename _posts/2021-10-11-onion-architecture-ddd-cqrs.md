@@ -4,7 +4,7 @@ title: Onion Architecture with DDD and CQRS
 tags: architecture ddd cqrs
 ---
 
-A lot of software engineering is about drawing boxes. That is, deciding how to break down the code we write. We don't just write everything in the `Main` method. We set boundaries, create abstractions, and divide things into single responsibilities.
+A lot of software engineering is about [drawing boxes](/drawing-boxes). That is, deciding how to break down the code we write. We don't just write everything in the `Main` method. We set boundaries, create abstractions, and divide things into single responsibilities.
 
 In C#, we group code into methods. Then we group those into classes and decide that some methods are `private`. We do the same again, grouping classes into libraries, and then the same again within a whole solution. At each level we decide what is `internal` and what becomes our **public contracts**.
 
