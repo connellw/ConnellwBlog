@@ -20,7 +20,11 @@ We should ensure boxes don't *know of* each other, otherwise we will create a **
 
 ![Boxes and Arrows](/images/diagrams/boxes-and-arrows.png)
 
-But circular references are quite common in functional programming. Mutual recursion is common when parsing expressions or grammar. But generally, the higher up the architectural levels you go, the more it is considered an anti-pattern. The bigger those boxes are, the more you'll want to reduce coupling. The compiler will error if two projects reference each other. It's possible for classes to reference each other, but usually code quality tools will flag it as a code smell.
+There are a few exceptions to this rule. Circular references are quite common in functional programming, such as mutual recursion when parsing expressions or grammar. But generally, the higher up the architectural levels you go, the more it is considered an anti-pattern. The bigger those boxes are, the more you'll want to reduce coupling.
+
+- While it's possible for classes to reference each other, usually code quality tools will flag that as a code smell.
+- With class libraries, the compiler will error if two reference each other.
+- With microservices, this is a sign of a **distributed monolith**.
 
 ## Inverting the Control
 
@@ -30,6 +34,10 @@ We can invert the control using any form of [callback](https://en.wikipedia.org/
 
 > Don't call us, we'll call you.
 > -- The Hollywood Principle
+
+With these techniques in our tool belts, it's possible to avoid circular dependencies and create a neat one-way dependency diagram of our entire architecture.
+
+![Microservices direction of dependency](/images/diagrams/microservices-direction.png)
 
 # Internal and Public
 
@@ -59,4 +67,4 @@ Maybe the way we think about the problems doesn't always translate well to a cod
 
 ![Package by component](/images/diagrams/package-by-component.png).
 
-I believe we should use the features given to us by our languages and frameworks to reflect the way we think about our architecture. Diagrams are great, but code really is its own best documentation.
+We should use the features available in our languages and frameworks to reflect the way we think about our architecture. Diagrams are great, but quality code really is its own best documentation. Both play an important role in understanding and communicating the boundaries of our systems.

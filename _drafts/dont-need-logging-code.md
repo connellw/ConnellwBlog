@@ -10,6 +10,7 @@ tags: aop logging decorator
 - More drawing boxes
 - Extra box for "stuff I want to log"
     - Just use the existing boxes.
+    - Same as code comments
 
 Single Responsibility. Separation of Concerns.
 
