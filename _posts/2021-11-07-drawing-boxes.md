@@ -16,7 +16,7 @@ It's very visual. We use shapes and patterns to describe different relationships
 
 Once we've split everything up into boxes, we stitch it all back together again using some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless; the arrows represent a **direction of dependency**, where a box *knows of* the other box it points to.
 
-We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency** where our modules become tightly coupled and we cannot use either without the other.
+Direction is one-way. We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency** where our modules become tightly coupled and we cannot use either without the other.
 
 ![Boxes and Arrows](/images/diagrams/boxes-and-arrows.png)
 

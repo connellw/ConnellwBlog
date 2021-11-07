@@ -10,7 +10,7 @@ In C#, we group code into methods. Then we group those into classes and decide t
 
 Once we've split everything up into boxes, we stitch it all back together again with some arrows. Libraries reference other libraries, classes depend on other classes, and methods call other methods. But it's not meaningless. The arrows represent a **direction of dependency**, where a box "knows of" the other box it is pointing to. At least, it knows the public contracts, not the internals.
 
-We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency**. The compiler will error if we attempt this between projects. With other boxes, it's possible, but not recommended, due to the high coupling it creates.
+Direction is one-way. We should ensure boxes don't *know of* each other, otherwise we will create a **circular dependency** and tightly couple those boxes together.
 
 ![Boxes and Arrows](/images/diagrams/boxes-and-arrows.png)
 
