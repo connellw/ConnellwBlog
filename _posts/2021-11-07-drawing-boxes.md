@@ -65,6 +65,6 @@ Sometimes we draw diagrams one way and write code in another. Class libraries gi
 
 Maybe the way we think about the problems doesn't always translate well to a codebase.  Or maybe we're just not splitting our code in the same way we think about them. We can avoid doing either and [package by component](http://www.codingthearchitecture.com/2015/03/08/package_by_component_and_architecturally_aligned_testing.html) instead. We can divide projects both horizontally and vertically where it makes sense to do so.
 
-![Package by component](/images/diagrams/package-by-component.png).
+![Package by component](/images/diagrams/package-by-component.png)
 
 We should use the features available in our languages and frameworks to reflect the way we think about our architecture. Diagrams are great, but quality code really is its own best documentation. Both play an important role in understanding and communicating the boundaries of our systems.
