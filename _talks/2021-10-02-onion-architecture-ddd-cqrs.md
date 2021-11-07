@@ -11,4 +11,8 @@ Explaining how I reason about the building blocks of Onion Architecture, Domain-
 
 I summarised this talk in a [blog post with the same title](/onion-architecture-ddd-cqrs) a few days after.
 
-<iframe class="video" width="640" height="360" src="https://www.youtube.com/embed/CdZzfqwnx4I" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div class="video">
+<div class="video-wrapper">
+    <iframe width="640" height="360" src="https://www.youtube.com/embed/CdZzfqwnx4I" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+</div>
