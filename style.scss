@@ -118,6 +118,7 @@ img {
 .date {
   font-style: italic;
   color: $gray;
+  margin: 15px 0;
 }
 
 // Specify the color of the selection
@@ -265,15 +266,23 @@ nav {
     margin-top: 10px;
   }
 
-  .read-more {
-    text-transform: uppercase;
-    font-size: 15px;
-  }
-
-  img {
+  img, .video {
     display: block;
     margin: 0 auto;
   }
+}
+
+.talk {
+  .thumbnail {
+    float: right; 
+    width: 240px;
+    margin: 0 0 2em 2em;
+  }
+}
+
+.read-more {
+  text-transform: uppercase;
+  font-size: 15px;
 }
 
 .entry {
