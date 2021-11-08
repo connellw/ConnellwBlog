@@ -27,10 +27,10 @@ I toyed with Minimal APIs, some kind of generic controller, but eventually I tho
 
 # Binding
 
-All requests are just DTOs (data transfer objects). There are no controllers to perform the model binding though. Instead, just put the familiar-looking `[HttpGet]` or `[HttpPost]` attributes straight onto the request object.
+All requests are just DTOs (data transfer objects). There are no controllers to perform the model binding though. Instead, just put the `[RouteGet]` or `[RoutePost]` attributes straight onto the request object.
 
 ```c#
-[HttpGet("/films/{id}/actors")]
+[RouteGet("/films/{id}/actors")]
 public class GetFilmActorsRequest
 {
     [FromRoute("id")]
@@ -43,11 +43,13 @@ public class GetFilmActorsRequest
 
 That's it! The library [dynamically generates a controller for you](https://www.strathweb.com/2018/04/generic-and-dynamically-generated-controllers-in-asp-net-core-mvc/).
 
+The model is passed into a controller action, so all of MVC's model binding attributes work the same.
+
 # Handling
 
 Once that request object exists, it is passed into whatever implementation of `IRequestHandler<GetFilmActorsRequest>` is registered, which should be familiar to developers who have used MediatR or NServiceBus.
 
-This is where we're going to implement a generic pipeline as one generic class.
+This is where we're going to implement a generic pipeline as one generic class. All request models will then use this same generic implementation.
 
 ```c#
 internal class GenericRequestHandler<T> : IRequestHandler<T>
@@ -73,31 +75,42 @@ internal class GenericRequestHandler<T> : IRequestHandler<T>
 }
 ```
 
-MediatR has [it's own pipeline](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/), where usually I would will also dispatch domain events and commit the unit of work. We could easily to move our validation to that pipeline instead.
+MediatR has [it's own pipeline](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/), where usually I would also put cross cutting concerns such as dispatching domain events and committing the unit of work. We could easily to move our validation to that pipeline instead.
 
-The main difference is that the MediatR request handler must return the defined response type, whereas the Controlless handler can return any object.
+The main difference is that the MediatR request handler must return the defined response type, whereas the Controlless handler can return any object, so we can return a different error model rather than throwing an exception.
 
 # Responding
 
-Once a response object has been returned from a handler, we need a way to write it back to the HTTP stream. The most obvious is to register a generic `JsonResponseWriter` that by default serializes the response and is included by default.
+For some responses, we may want to use a different status code or add headers.
 
-For some response objects, however, we might want to set different status codes. For specific cases, we can register more specific `IResponseWriter<>` implementations which will be used as priority. The priority order is however the DI container works, which usually means you'll want to register the specific handler after the generic handler.
+Returning from the handler is exactly the same as returning from a controller action in MVC. We could return any object we like, or maybe return an `IActionResult`. We could even write a generic mapper than maps a response to an action result.
+
+Or we could use an `IResultFilter`. You can place action filters on the request DTO itself, or register them globally. Everything works just like it would do in a controller.
 
 ```c#
-internal class ValidationFailureJsonResponseWriter : IResponseWriter<List<ValidationFailure>>
+public class ValidationFailureResultFilter : IResultFilter
 {
-    public async Task Write(List<ValidationFailure> responseObject, HttpResponse response)
+    public void OnResultExecuting(ResultExecutingContext context)
     {
-        response.StatusCode = 400;
-        await response.WriteAsJsonAsync(responseObject);
+        if(context.Result is ObjectResult objectResult
+            && objectResult.Value is List<ValidationFailure>)
+        {
+            context.HttpContext.Response.StatusCode = 400;
+        }
+    }
+
+    public void OnResultExecuted(ResultExecutedContext context)
+    {
     }
 }
 ```
 
+Or, specifically for status codes, there a result filter built into Controlless. Just plop the `[StatusCode(400)]` on your response object type.
+
 # Exceptions and Logging
 
-Errors from the handlers will propagate up to the [normal ASP.NET Core exception handlers](https://docs.microsoft.com/en-us/aspnet/core/web-api/handle-errors?view=aspnetcore-5.0).
+Errors from the handlers will propagate up to the [normal ASP.NET Core exception handlers](https://docs.microsoft.com/en-us/aspnet/core/web-api/handle-errors?view=aspnetcore-5.0), or another option is to use [exception filters](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/filters?view=aspnetcore-5.0#exception-filters).
 
 Similarly, there's no special logging or tracing built into the framework. All of these concerns are cross-cutting and can be handled in the ASP.NET Core pipeline, such as with Middlewares.
 
-Together, ASP.NET Core middlewares, Controlless and MediatR Pipeline Behaviors create a Aspect-Oriented feel and a very modular Web API solution that strictly obeys the Single Responsibility and Open/Closed principles.
+Together, ASP.NET Core middlewares, action filters, Controlless and MediatR Pipeline Behaviors create a Aspect-Oriented feel and a very modular Web API solution that strictly obeys the Single Responsibility and Open/Closed principles. We write all aspects of our API once, and the frameworks and pipeline reuse those rules for the whole API.
