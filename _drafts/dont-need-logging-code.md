@@ -63,7 +63,13 @@ I've worked in teams where we spend a *huge* chunk of our time writing log lines
 
 Do you know what, this is about separating concerns too. We managed to write the rules in one place. Couldn't we implement them in one place? Perhaps one class that has the single responsibility of logging? And never speak about it unless we are modifying the code that is responsible for logging?
 
-##### 6. Log and rethrow
+##### 6. There's so much boilerplate
+
+There's so much of it! Sometimes more than half the lines of code are related to logging. It clutters the codebase in such a way that important logic gets obfuscated and is harder to read.
+
+Especially if we've defined standards for how to write this stuff, we end up seeing very similar logging code everywhere. Sometimes we tune it out and glance past it when reviewing it because we're so familiar with the general look of it.
+
+##### 7. Log and rethrow
 
 How does the calling code know if you've already logged the exception? You'll probably end up logging this same exception in multiple places if you follow this anti-pattern everywhere.
 
@@ -200,24 +206,213 @@ We've solved problems 1-4 so far, but it can be quite cumbersome to write decora
 
 Depending on what you want to "wrap around", there might already be a way to write one logging class for many uses.
 
-ASP.NET Core has Middlewares or Filters. Both of these ideas allow you to wrap around the call to the `next()` method in the pipeline, such as a controller action. This is the same idea. A global `LoggingActionFilter` is the same as a logging decorator for every controller.
+ASP.NET Core has [Middlewares](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/) or [Filters](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/filters). Both of these ideas allow you to wrap around the call to the `next()` method in the pipeline, such as a controller action. This is the same idea. A global `LoggingActionFilter` is the same as a logging decorator for every controller.
 
 ```c#
+public class LoggingActionFilter : IAsyncActionFilter
+{
+    private readonly ILogger _logger;
 
+    public LoggingActionFilter(ILogger logger)
+    {
+        _logger = logger;
+    }
+    
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        _logger.Debug("Handling HTTP request.");
+
+        try
+        {
+            await next();
+
+            _logger.Information("Handled HTTP request.");
+        }
+        catch (Exception exception)
+        {
+            _logger.Error("Error handling HTTP request.", exception);
+            throw;
+        }
+    }
+}
 ```
 
-Middlewares. PipelineBehaviors.
-DelegatingHandler
+MediatR and NServiceBus can have [Pipeline Behaviors](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/) registered, which is the same idea where the `next()` function calls deeper into the pipeline.
+
+```c#
+public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+{
+    private readonly ILogger _logger;
+
+    public LoggingBehavior(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+    {
+        _logger.Debug($"Handling {typeof(TRequest)}.");
+
+        try
+        {
+            var result = await next();
+
+            _logger.Information($"Handled {typeof(TRequest)}.");
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            _logger.Error($"Error handling {typeof(TRequest)}.", exception);
+            throw;
+        }
+    }
+}
+```
+
+For outbound HTTP requests you can use [HttpClient Message Handlers](https://docs.microsoft.com/en-us/aspnet/web-api/overview/advanced/httpclient-message-handlers) and implement a `DelegatingHandler`. Again, same idea. In fact, Logging is even an example Microsoft give in their tutorial.
+
+```c#
+public class LoggingHandler : DelegatingHandler
+{
+    ILogger _logger;
+
+    public LoggingHandler(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        _logger.Debug($"Sending HTTP request to {request.RequestUri}.");
+
+        try
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+
+            _logger.Information($"Received response from {request.RequestUri}.");
+
+            return response;
+        }
+        catch (Exception exception)
+        {
+            _logger.Error($"Error sending HTTP request to {request.RequestUri}.", exception);
+            throw;
+        }
+    }
+}
+```
+
+With all of these, logging is the example used, but there are many other cross-cutting concerns you can add to these pipelines such as validation, caching, retrying, tracing. The concerns don't need to be cross-cutting, for example I like to commit my database transaction after MediatR requests are handled, for which I register a Pipeline Behavior.
 
 # Type Interception
 
-- Aspectos github
-- Too much boilerplate. Boilerplate vs magic.
+Okay, but what if there isn't a pipeline available? What if it's just a classic call to an interface I've defined in the same library? This is where we mix in a bit of magic and, I admit, it can get a little scary, but in the pursuit of ridding our codebase of boilerplate logging code, we must accept the trade-off:
 
-# ILWeaving
+[![What would you like to complain about? Too much magic. Too much boilerplate.](/images/quotes/magic-vs-boilerplate.png)](https://twitter.com/phillip_webb/status/705909774001377280)
 
-PostSharp. Scary?
-- Too much boilerplate. Boilerplate vs magic.
+The [Castle.Core](https://github.com/castleproject/Core) library provides a DynamicProxy framework that can **create dynamic runtime types that decorate other classes**. These proxy types use interceptors for every method call, which have similar features to the filters/behaviors/handlers above.
+
+```c#
+public class LoggingInterceptor : IInterceptor
+{
+    private ILogger _logger;
+
+    public LoggingInterceptor(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    public void Intercept(IInvocation invocation)
+    {
+        _logger.Debug($"Making method call to {invocation.Method.Name}.");
+
+        try
+        {
+            invocation.Proceed();
+
+            _logger.Information($"Completed method call to {invocation.Method.Name}.");
+
+            return invocation.ReturnValue;
+        }
+        catch (Exception exception)
+        {
+            _logger.Error($"Error sending HTTP request to {request.RequestUri}.", exception);
+            throw;
+        }
+    }
+}
+```
+
+- hook up with Autofac.
+
+You may have noticed that interceptors are not asynchronous, but you can get around this with some [reflection magic](https://github.com/castleproject/Core/blob/master/docs/dynamicproxy-async-interception.md) too.
+
+Type interception relies on creating runtime types where the decorator pattern can be implemented, so not all method calls can be implemented.
+- **Interface methods** can be intercepted because the runtime type implements the decorator pattern. It implements the interface and also encapsulates the inner type that it forwards its calls to.
+- **Virtual methods on non-sealed classes** can also be intercepted, because the proxy type derives from the base type and overrides those methods. These types have the ability to wrap around the inner method and call the `base.` method.
+
+# IL Weaving
+
+Still want to log those `private` method calls? Type interception wasn't scary enough for you? [PostSharp modifies the MSIL instructions](https://www.postsharp.net/aop.net/msil-injection) after the C# code has been compiled. Your source code remains exactly the same, without the logging code, but the compiled code is as if the log lines were written directly into your class.
+
+# Abstracting Even Further
+
+Haven't we gone far enough? Well, maybe, but in for a penny.
+
+Maybe now you have a handful of very similar looking behaviors, interceptors, middlewares, etc. Maybe you have logging absolutely everywhere.
+
+![Log all of the things](/images/memes/log-all-the-things.png)
+
+It's possible to abstract all these behaviors into one super-behavior. This is the premise behind [Aspectos](https://github.com/connellw/Aspectos); a mini library I put together. All you do is implement a single `IAspect`, then you can hook that up to all of the behaviors and middlewares listed above.
+
+```c#
+public class LoggingAspect : IAspect
+{
+    private readonly ILogger _logger;
+
+    public LoggingAspect(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(IInvocationContext context)
+    {
+        _logger.Debug($"Making method call to {context.Method.Name}.");
+
+        try
+        {
+            await context.InvokeAsync();
+
+            _logger.Information($"Completed method call to {invocation.Method.Name}.");
+
+            return invocation.ReturnValue;
+        }
+        catch (Exception exception)
+        {
+            _logger.Error($"Error sending HTTP request to {request.RequestUri}.", exception);
+            throw;
+        }
+    }
+}
+```
+
+But should you? I'd actually say, probably not. We still haven't addressed problem #7 yet - the log and rethrow anti-pattern.
+
+In my opinion, logging all these verbose lines feels old-fashioned. I tend to write web applications, not console applications. My error details will be returned to my API when using a development environment. For trace information, we have debuggers nowadays. The scale we work at in production might mean such verbose logging is impractical anyway.
+
+Instead, I'd prefer **one log line per request scope**, whether that's an HTTP request into my application, pulling a message from a bus or queue, or handling a scheduled job.
+
+I don't need an "about to do a thing" line before the request. I only ever find these are needed for one of two reasons:
+- To time how long something takes. Just add an `elapsed_time` property to the line that logs when the request has completed to achieve this.
+- To debug scenarios where the starting line is logged but not the end. This is because:
+    - An exception was thrown or something happened to divert the control flow away from logging the ending line. Use a `finally` block.
+    - You're stuck in an infinite loop somewhere.
+    - Your application has totally crashed. This is a real edge case.
+
+------
+
+end of post
 
 ------
 
