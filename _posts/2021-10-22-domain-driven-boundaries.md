@@ -32,6 +32,6 @@ Nowadays, [identifying Bounded Contexts can help design a microservices architec
 
 It's too easy to get caught out by this convenient parallel, break down microservices like we're so used to doing with classes and libraries, then assert that those boundaries are now business domains.
 
-I have made the mistake before of inventing language to solve technical problems in the model. Creating abstractions for maintainability, connectivity, persistence concerns, or monitoring concerns.
+I have made the mistake before of inventing language to solve technical problems in the model. Creating abstractions for maintainability, connectivity, persistence concerns, or [monitoring concerns](/dont-need-logging-code).
 
 The problem with this is that, if our domain boundaries or models are driven by the technical design, we’re not speaking the same language any more; we’ve started to use technical jargon again. It’s harder to understand requirements, it’s harder to explain problems, harder to compromise, to prioritise, and ultimately it's much more costly to build software.
