@@ -385,17 +385,10 @@ Type interception wasn't scary enough for you? Want to log some `private` method
 
 But should you? I'd actually say, probably not. We still haven't addressed problem #7 yet - the log and rethrow anti-pattern.
 
-In my opinion, logging all these verbose lines feels old-fashioned. I tend to write web applications, not console applications. My error details will be returned to my API when using a development environment. For trace information, we have debuggers nowadays. The scale we work at in production might mean such verbose logging is impractical anyway.
+In my opinion, logging all these verbose "this is where I got to" lines feels old-fashioned. I tend to write web applications, not console applications. My error details will be returned to my API when using a development environment. For trace information, we have debuggers nowadays. The scale we work at in production might mean such verbose logging is impractical anyway.
 
-Instead, I'd prefer **one log line per request scope**, whether that's an HTTP request into my application, pulling a message from a bus, or handling a scheduled job.
+Instead, I'd prefer **one log line per request scope**, whether that's an HTTP request into my application, pulling a message from a bus, or handling a scheduled job. I sometimes add logs for other integration points such as database or external HTTP calls when necessary.
 
-Only log when the processing has finished, ensuring relevant information about the request and whether it was successful is included. I don't need an "about to do a thing" line at the start. I only ever find these are needed for one of two reasons:
+Only log **after the processing has finished**, ensuring relevant information about the request, the response, and any exception info are included. No need for the "about to do a thing" lines.
 
-1. To time how long something takes. Just time it within the application and add an `elapsed_time` property to line at the end to achieve the same thing.
-
-2. To debug scenarios where the starting line is logged but not the end. This is normally because:
-    - An exception was thrown or something happened to divert the control flow away from logging the ending line. Use a `finally` block.
-    - You're stuck in an infinite loop somewhere. You could log a timeout for the request here.
-    - Your application has totally crashed. This is a real edge case.
-
-There may be a little value in covering the edge cases, but in my opinion, it's not worth the trade-off. I prefer cleaner code, cleaner tests and cleaner logs. If ever I feel I need detailed trace information, I can still use the logs I have to recreate a request locally or write a failing test.
+There may be a little value in logging everything between, but in my opinion, it's rarely worth the trade-off. I prefer cleaner code, cleaner tests and cleaner logs. If ever I feel I need detailed trace information, I can still use the logs I have to recreate a request locally or write a failing test.
